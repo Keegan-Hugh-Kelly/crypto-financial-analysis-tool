@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "websocket": "^1.0.34",
+    "websocket-client": "^1.0.0"
+  }
+}
