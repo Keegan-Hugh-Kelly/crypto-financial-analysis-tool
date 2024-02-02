@@ -1,0 +1,142 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blockchain API Web App</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h1>Blockchain API Web App</h1>
+
+    <form method="post" action="/" onsubmit="return fetchAndDisplayData()">
+      <label for="chart_name">Chart Name:</label>
+      <select id="chart_name" name="chart_name" required>
+        <option value="transactions-per-second">Transactions Per Second</option>
+        <option value="trade-volume">Trade Volume</option>
+        <option value="market-price">Market Price</option>
+        <!-- Add more options as needed -->
+      </select>
+
+      <label for="timespan">Timespan:</label>
+      <input
+        type="text"
+        id="timespan"
+        name="timespan"
+        required
+        oninput="debounce(updateChart, 500)"
+      />
+
+      <label for="rolling_average">Rolling Average:</label>
+      <input type="text" id="rolling_average" name="rolling_average" required />
+
+      <button type="submit">Fetch Data</button>
+    </form>
+
+    <canvas id="myChart" style="max-height: 80vh"></canvas>
+
+    <script>
+      function debounce(func, delay) {
+        let timeout;
+        return function () {
+          const context = this;
+          const args = arguments;
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+      }
+
+      function updateChart() {
+        // Implement the function to dynamically update the chart when timespan changes
+        // You can use this function to update other parameters as well
+        // For now, let's just re-fetch and re-display the data with the new timespan
+        fetchAndDisplayData();
+      }
+
+      function fetchAndDisplayData() {
+        var chartName = document.getElementById("chart_name").value;
+        var timespan = document.getElementById("timespan").value;
+        var rollingAverage = document.getElementById("rolling_average").value;
+
+        fetch("/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            chart_name: chartName,
+            timespan: timespan,
+            rolling_average: rollingAverage,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              alert("Failed to fetch data. Error: " + data.error);
+            } else {
+              displayChart(data);
+            }
+          })
+          .catch((error) => {
+            alert("Failed to fetch data. Error: " + error);
+          });
+
+        return false;
+      }
+
+      function displayChart(data) {
+        var ctx = document.getElementById("myChart").getContext("2d");
+
+        // Destroy existing chart if it exists
+        if (window.myChart) {
+          window.myChart.destroy();
+        }
+
+        // Create a new chart
+        window.myChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: data.values.map((entry) => entry.x),
+            datasets: [
+              {
+                label: data.name,
+                data: data.values.map((entry) => entry.y),
+                borderColor: "rgb(75, 192, 192)",
+                borderWidth: 2,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                type: "linear",
+                position: "bottom",
+              },
+              y: {
+                type: "linear",
+                position: "left",
+              },
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: "top",
+              },
+            },
+            layout: {
+              padding: {
+                top: 10,
+              },
+            },
+            aspectRatio: 2, // Set the aspect ratio based on your preference
+            height: 80, // Set the height of the chart in pixels
+          },
+        });
+      }
+    </script>
+  </body>
+</html>
